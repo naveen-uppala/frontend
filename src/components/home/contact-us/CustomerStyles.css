@@ -1,0 +1,70 @@
+.contact-us-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 2%;
+}
+
+.card-container {
+    padding: 0% 0% 4%;
+    /* display: flex;
+    justify-content: center; */
+    border-radius: 2%;
+    /*background: #009AC7; */
+    background: rgba(0, 90, 135, 1);
+    /* background: rgba(31,37,61, 0.8); */
+    /* background: #005a87; */
+    /* width: 400px; */
+    background-size: cover;
+    /* height: 5; */
+}
+
+.form-container {
+    padding: 4%;
+}
+
+.button-container {
+    padding-left: 4%;
+    display: flex;
+    justify-content: center;
+}
+
+.button-container .btn:hover {
+    color: #fff;
+}
+
+/* input[type='date']:after {
+    content: attr(placeholder)
+} */
+
+.contact-us-header {
+    color: #2a0d51 !important;
+    font-size: 32px;
+    font-weight: 900;
+}
+
+.contact-us-button {
+    margin-bottom: 1%;
+}
+
+.form-button {
+    color: white;
+    background-color: black;
+    /* width: 1in; */
+}
+
+.about_body p {
+    font-size: 16px;
+}
+
+.about_body ul li {
+    font-size: 16px;
+}
+
+.about_body h1 {
+    font-size: 20px;
+}
+
+.form-label-text {
+    font-size: 12px;
+    color: #fff;
+}

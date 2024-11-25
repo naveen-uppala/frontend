@@ -1,0 +1,23 @@
+.home-image-container {
+    padding-top: 8%;
+}
+
+.image-container {
+    /* position: relative; */
+    padding: 8%;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+    margin-bottom: 2%;
+}
+
+.home-image-container .card {
+    border-radius: 0% !important;
+    border: unset !important;
+    text-align: center;
+}
+
+.image-container p {
+    color: #fff;
+    font-size: 65px;
+    font-weight: 900;
+}
