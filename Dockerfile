@@ -15,9 +15,6 @@ COPY . .
 RUN npm run build
 
 
-
-
-
 # Stage 2: Set up Express server with React build files
 FROM node:22.11.0 AS production
 
@@ -29,13 +26,13 @@ COPY server/package*.json ./
 RUN npm install --legacy-peer-deps
 
 # Copy the React build files from the build stage
-COPY --from=build /app/build /server/build
+COPY --from=build /app/build ./build
 
 # Copy the Express server code
-COPY server /server
+COPY server/ ./
 
 # Expose the port on which the Express server will run
 EXPOSE 5000
 
 # Start the Express server
-CMD ["node index.js"]
+CMD ["node", "index.js"]
