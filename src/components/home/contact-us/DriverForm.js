@@ -38,7 +38,7 @@ const DriverForm = () => {
         else {
             console.log(values)
 
-            fetch("http://localhost:8081/home/customerDetails",{
+            fetch("http://localhost:8080/driver/driverDetails",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify(values)                
@@ -120,15 +120,15 @@ const DriverForm = () => {
                                 <Label className="form-label-text">Vehicle Type</Label>
                                 <select
                                     type="select"
-                                    name="moveSize"
+                                    name="VehicleType"
                                     className="form-control"
-                                    value={values.moveSize}
+                                    value={values.VehicleType}
                                     onChange={handleChange}
                                     required
                                 >
                                     <option value="hidden">Select Vehicle Type</option>
-                                    <option value="1 Bedroom Apartment">Ashok Leyland</option>
-                                    <option value="2 Bedroom Apartment">Tata Super Ace</option>
+                                    <option value="Ashok Leyland">Ashok Leyland</option>
+                                    <option value="Tata Super Ace">Tata Super Ace</option>
                                 </select>
                             </FormGroup>
                         </Col>
