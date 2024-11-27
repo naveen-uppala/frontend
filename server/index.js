@@ -1,5 +1,6 @@
 import express from "express";
 import fetch from "node-fetch"; // if you need node-fetch
+import path from "path"; // Ensure the path module is imported
 const app = express();
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -11,6 +12,10 @@ app.use(cors({
     methods: ["GET", "POST"], // Specify allowed HTTP methods
     allowedHeaders: ["Content-Type"] // Specify allowed headers
 }));
+
+// Serve static files from the React app's build directory
+const __dirname = path.resolve(); // Required for ES module compatibility
+app.use(express.static(path.join(__dirname, "build")));
 
 // Middleware
 app.use(bodyParser.json());
@@ -29,6 +34,12 @@ app.post('/customer/customerDetails', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  // Catch-all route to serve the React app for non-API requests
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
 
 // Start the BFF server
 const PORT = 5000;
