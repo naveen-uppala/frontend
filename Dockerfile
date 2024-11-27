@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM node:16 AS stage1
+FROM node:22.11.0 AS stage1
 COPY /. /node/
 WORKDIR /node
 RUN npm install
