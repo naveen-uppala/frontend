@@ -38,4 +38,4 @@ COPY server /server
 EXPOSE 5000
 
 # Start the Express server
-CMD ["node", "server/index.js"]
+CMD ["node index.js"]
