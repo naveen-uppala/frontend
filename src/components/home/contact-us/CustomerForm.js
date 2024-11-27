@@ -44,7 +44,7 @@ const CustomerForm = () => {
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify(values)
             }).then(()=>{
-                console.log("New user added")
+                console.log("user added")
             })
             }
 
@@ -170,9 +170,9 @@ const CustomerForm = () => {
                                     <option value="1 Bedroom Apartment">1 Bedroom Apartment</option>
                                     <option value="2 Bedroom Apartment">2 Bedroom Apartment</option>
                                     <option value="3 Bedroom Apartment">3 Bedroom Apartment</option>
-                                    <option value="1 Bedroom House">2 Bedroom House</option>
-                                    <option value="2 Bedroom House">3 Bedroom House</option>
-                                    <option value="3 Bedroom House">4 Bedroom House</option>
+                                    <option value="1 Bedroom House">1 Bedroom House</option>
+                                    <option value="2 Bedroom House">2 Bedroom House</option>
+                                    <option value="3 Bedroom House">3 Bedroom House</option>
                                     <option value="Office">Office</option>
                                     <option value="Other">Other</option>
                                 </select>
