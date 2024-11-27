@@ -7,7 +7,7 @@ import axios from 'axios';
 
 // Enable CORS
 app.use(cors({
-    origin: "http://localhost:3000", // Allow requests from this origin
+    origin: "*", // Allow requests from this origin
     methods: ["GET", "POST"], // Specify allowed HTTP methods
     allowedHeaders: ["Content-Type"] // Specify allowed headers
 }));
