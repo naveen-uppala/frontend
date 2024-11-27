@@ -37,15 +37,24 @@ const CustomerForm = () => {
 
         else {
             console.log(values)
-
-            // fetch("https://backend.hyderabad-packers-movers.in/customer/customerDetails",{
             fetch("/customer/customerDetails", {
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify(values)
-            }).then(()=>{
-                console.log("user added")
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
             })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Failed to submit data");
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    console.log("Data submitted successfully:", data);
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+            
             }
 
         // else {
