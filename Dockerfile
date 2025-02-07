@@ -16,7 +16,7 @@ RUN npm run build
 
 
 # Stage 2: Set up Express server with React build files
-FROM node:22.11.0 AS production
+FROM node:22.11.0 AS final
 
 # Set working directory for the Express server
 WORKDIR /server
