@@ -26,7 +26,7 @@ app.post('/customer/customerDetails', async (req, res) => {
     try {
       const data = req.body;
       // const response = await axios.post('https://backend.hyderabad-packers-movers.in/customer/customerDetails', data);
-      const response = await axios.post('http://localhost:8080/customer/customerDetails', data);
+      const response = await axios.post('http://52.15.68.88:8080/customer/customerDetails', data);
       // Send the JSON response from Spring Boot to the frontend
       res.status(200).json(response.data);
     } catch (error) {
