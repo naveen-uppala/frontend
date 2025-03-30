@@ -2,9 +2,12 @@
 FROM node:22.11.0 AS build
 WORKDIR /app
 COPY . .
-RUN npm install --legacy-peer-deps && npm run build && cp -r build server
-WORKDIR /app/server
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps \
+  && npm run build \
+  && cp -r build server \
+  && cd server \
+  && npm install --legacy-peer-deps
+
 
 # Stage 2: Rnunning the BFF Server
 FROM node:22-alpine AS final
