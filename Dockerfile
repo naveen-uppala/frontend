@@ -10,8 +10,7 @@
 FROM node:22.11.0 AS build
 WORKDIR /app
 COPY . .
-RUN npm install --legacy-peer-deps && npm run build
-COPY build /server
+RUN npm install --legacy-peer-deps && npm run build && cp -r build/ server/
 WORKDIR /server
 RUN npm install --legacy-peer-deps
 
