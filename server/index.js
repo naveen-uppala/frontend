@@ -36,7 +36,7 @@ app.post("/customer/customerDetails", async (req, res) => {
 
     // Secure HTTPS request to backend Spring Boot app
     const response = await axios.post(
-      "https://backend-dev-hpm.com/customer/customerDetails",
+      "https://backend.dev.hpm.com/customer/customerDetails",
       data,
       { httpsAgent } // Use custom CA trust
     );
