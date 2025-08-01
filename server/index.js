@@ -30,6 +30,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "build")));
 
 // Proxy route to backend
+
 app.post("/customer/customerDetails", async (req, res) => {
   try {
     const data = req.body;
@@ -47,6 +48,25 @@ app.post("/customer/customerDetails", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+app.post("/driver/driverDetails", async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Secure HTTPS request to backend Spring Boot driver service
+    const response = await axios.post(
+      "https://backend.dev.hpm.com/driver/driverDetails",
+      data,
+      { httpsAgent }
+    );
+
+    res.status(200).json(response.data);
+  } catch (error) {
+    console.error("Error communicating with Spring Boot (Driver):", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // Catch-all to serve React app for non-API requests
 app.get("*", (req, res) => {
