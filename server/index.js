@@ -10,14 +10,21 @@ import axios from "axios";
 const app = express();
 const __dirname = path.resolve(); // For ES module compatibility
 
-// Load the private root CA certificate
-const httpsAgent = new https.Agent({
-  ca: fs.readFileSync(path.join(__dirname, "certs", "my-private-root-ca.pem")),
-});
+// Custom HTTPS agent
+let httpsAgent;
+
+try {
+  const caCert = fs.readFileSync(path.join(__dirname, "certs", "my-private-root-ca.pem"));
+  httpsAgent = new https.Agent({ ca: caCert });
+  console.log("✅ Loaded custom CA certificate for SSL verification.");
+} catch (err) {
+  console.warn("⚠️ Failed to load custom CA cert. Falling back to insecure SSL (dev only).");
+  httpsAgent = new https.Agent({ rejectUnauthorized: false });
+}
 
 // Enable CORS
 app.use(cors({
-  origin: "*", // Adjust as needed for production
+  origin: "*", // Adjust as needed
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type"]
 }));
@@ -26,34 +33,34 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from the React build directory
+// Serve React static files
 app.use(express.static(path.join(__dirname, "build")));
 
-// Proxy route to backend
+// === Routes ===
 
+// Customer
 app.post("/customer/customerDetails", async (req, res) => {
   try {
     const data = req.body;
 
-    // Secure HTTPS request to backend Spring Boot app
     const response = await axios.post(
       "https://backend.dev.hpm.com/customer/customerDetails",
       data,
-      { httpsAgent } // Use custom CA trust
+      { httpsAgent }
     );
 
     res.status(200).json(response.data);
   } catch (error) {
-    console.error("Error communicating with Spring Boot:", error.message);
+    console.error("❌ Error from /customer/customerDetails:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
+// Driver
 app.post("/driver/driverDetails", async (req, res) => {
   try {
     const data = req.body;
 
-    // Secure HTTPS request to backend Spring Boot driver service
     const response = await axios.post(
       "https://backend.dev.hpm.com/driver/driverDetails",
       data,
@@ -62,19 +69,18 @@ app.post("/driver/driverDetails", async (req, res) => {
 
     res.status(200).json(response.data);
   } catch (error) {
-    console.error("Error communicating with Spring Boot (Driver):", error.message);
+    console.error("❌ Error from /driver/driverDetails:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-
-// Catch-all to serve React app for non-API requests
+// Catch-all to serve React app
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "build", "index.html"));
 });
 
-// Start the Express server
+// Start server
 const PORT = 5000;
 app.listen(PORT, () => {
-  console.log(`BFF server running on http://localhost:${PORT}`);
+  console.log(`🚀 BFF server running on http://localhost:${PORT}`);
 });
