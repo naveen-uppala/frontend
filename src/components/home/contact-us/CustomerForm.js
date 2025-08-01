@@ -57,17 +57,6 @@ const CustomerForm = () => {
             
             }
 
-        // else {
-        //     console.log(values)
-        //     fetch("http://localhost:8081/customer/customerDetails",{
-        //         method:"POST",
-        //         headers:{"Content-Type":"application/json"},
-        //         body:JSON.stringify(values)
-        //     }).then(()=>{
-        //         console.log("New user added")
-        //     })
-        // }
-
     };
 
 
