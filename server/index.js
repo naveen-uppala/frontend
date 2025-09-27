@@ -44,7 +44,7 @@ app.post("/customer/customerDetails", async (req, res) => {
     const data = req.body;
 
     const response = await axios.post(
-      "https://backend.dev.hpm.com/customer/customerDetails",
+      "https://dev.aws.hpm.com/customer/customerDetails",
       data,
       { httpsAgent }
     );
@@ -62,7 +62,7 @@ app.post("/driver/driverDetails", async (req, res) => {
     const data = req.body;
 
     const response = await axios.post(
-      "https://backend.dev.hpm.com/driver/driverDetails",
+      "https://dev.aws.hpm.com/driver/driverDetails",
       data,
       { httpsAgent }
     );
