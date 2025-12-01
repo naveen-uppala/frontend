@@ -37,14 +37,24 @@ const DriverForm = () => {
         
         else {
             console.log(values)
-
-            fetch("http://localhost:8080/driver/driverDetails",{
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify(values)                
-            }).then(()=>{
-                console.log("New user added")
+            fetch("/driver/driverDetails", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
             })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Failed to submit data");
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    console.log("Data submitted successfully:", data);
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+            
             }
 
     /*    else {
