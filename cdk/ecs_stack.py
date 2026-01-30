@@ -55,18 +55,28 @@ class EcsFargateServiceStack(Stack):
         # ==================================================
         # Import EXISTING ALB + Listener
         # ==================================================
+        alb_sg_id = CfnParameter(self, "AlbSecurityGroupId")
+        
+        alb_sg = ec2.SecurityGroup.from_security_group_id(
+            self,
+            "AlbSecurityGroup",
+            alb_sg_id.value_as_string
+        )
+        
         alb = elbv2.ApplicationLoadBalancer.from_application_load_balancer_attributes(
             self,
             "Alb",
             load_balancer_arn=alb_arn.value_as_string,
-            security_group_id="sg-placeholder"
+            security_group_id=alb_sg_id.value_as_string
         )
         
         listener = elbv2.ApplicationListener.from_application_listener_attributes(
             self,
             "Listener",
-            listener_arn=listener_arn.value_as_string
+            listener_arn=listener_arn.value_as_string,
+            security_group=alb_sg
         )
+
 
 
         # ==================================================
