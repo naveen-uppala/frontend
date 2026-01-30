@@ -28,7 +28,12 @@ jobs:
       run: |
         pip install -r cdk/requirements.txt
         npm install -g aws-cdk
-
+        
+    - name: CDK Bootstrap
+      run: |
+        cd cdk
+        cdk bootstrap aws://074126659757/$AWS_REGION
+        
     - name: CDK Deploy
       run: |
         cd cdk
