@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import aws_cdk as cdk
-from ecs_stack import EcsServiceStack
+from ecs_stack import EcsFargateServiceStack
 
 app = cdk.App()
 
-EcsServiceStack(
+EcsFargateServiceStack(
     app,
     "ecs-fargate-service",
     env=cdk.Environment(
