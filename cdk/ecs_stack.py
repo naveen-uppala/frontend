@@ -8,36 +8,49 @@ from aws_cdk import (
 from constructs import Construct
 
 
-class EcsServiceStack(Stack):
+class EcsFargateServiceStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs):
         super().__init__(scope, id, **kwargs)
 
-    
-        # Parameters 
-        # -----------------------
+        # ==================================================
+        # Parameters (Harness-style)
+        # ==================================================
         service_name = CfnParameter(self, "ServiceName")
         image_uri = CfnParameter(self, "ImageUri")
-        container_port = CfnParameter(self, "ContainerPort", default=80)
+        container_port = CfnParameter(self, "ContainerPort", default=8080)
         desired_count = CfnParameter(self, "DesiredCount", default=1)
 
         vpc_id = CfnParameter(self, "VpcId")
+        subnet_ids = CfnParameter(
+            self, "SubnetIds", type="List<String>"
+        )
+
         cluster_name = CfnParameter(self, "ClusterName")
 
         alb_arn = CfnParameter(self, "AlbArn")
         listener_arn = CfnParameter(self, "ListenerArn")
-
-        # -----------------------
-        # Import existing VPC
-        # -----------------------
-        vpc = ec2.Vpc.from_lookup(
-            self,
-            "Vpc",
-            vpc_id=vpc_id.value_as_string
+        listener_priority = CfnParameter(
+            self, "ListenerPriority", default=100
         )
 
-        # -----------------------
-        # Import existing ECS Cluster
-        # -----------------------
+        # ==================================================
+        # Import EXISTING VPC (NO lookup)
+        # ==================================================
+        vpc = ec2.Vpc.from_vpc_attributes(
+            self,
+            "Vpc",
+            vpc_id=vpc_id.value_as_string,
+            availability_zones=[
+                f"{self.region}a",
+                f"{self.region}b",
+                f"{self.region}c"
+            ],
+            private_subnet_ids=subnet_ids.value_as_list
+        )
+
+        # ==================================================
+        # Import EXISTING ECS Cluster
+        # ==================================================
         cluster = ecs.Cluster.from_cluster_attributes(
             self,
             "Cluster",
@@ -46,9 +59,9 @@ class EcsServiceStack(Stack):
             security_groups=[]
         )
 
-        # -----------------------
-        # Import existing ALB + Listener
-        # -----------------------
+        # ==================================================
+        # Import EXISTING ALB + Listener
+        # ==================================================
         alb = elbv2.ApplicationLoadBalancer.from_application_load_balancer_attributes(
             self,
             "Alb",
@@ -63,9 +76,9 @@ class EcsServiceStack(Stack):
             security_group_id="sg-placeholder"
         )
 
-        # -----------------------
+        # ==================================================
         # Task Definition
-        # -----------------------
+        # ==================================================
         task_def = ecs.FargateTaskDefinition(
             self,
             "TaskDef",
@@ -90,9 +103,9 @@ class EcsServiceStack(Stack):
             )
         )
 
-        # -----------------------
+        # ==================================================
         # Create NEW Target Group
-        # -----------------------
+        # ==================================================
         target_group = elbv2.ApplicationTargetGroup(
             self,
             "TargetGroup",
@@ -106,16 +119,21 @@ class EcsServiceStack(Stack):
             )
         )
 
-        # Attach target group to existing listener
+        # Attach TG to EXISTING listener (path-based routing)
         listener.add_target_groups(
             "ListenerRule",
-            priority=100,
+            priority=int(listener_priority.value_as_string),
+            conditions=[
+                elbv2.ListenerCondition.path_patterns(
+                    [f"/{service_name.value_as_string}/*"]
+                )
+            ],
             target_groups=[target_group]
         )
 
-        # -----------------------
+        # ==================================================
         # ECS Fargate Service
-        # -----------------------
+        # ==================================================
         service = ecs.FargateService(
             self,
             "Service",
@@ -126,5 +144,5 @@ class EcsServiceStack(Stack):
             assign_public_ip=False
         )
 
-        # Register ECS service with target group
+        # Register service with Target Group
         service.attach_to_application_target_group(target_group)
