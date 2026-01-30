@@ -40,11 +40,7 @@ class EcsFargateServiceStack(Stack):
             self,
             "Vpc",
             vpc_id=vpc_id.value_as_string,
-            availability_zones=[
-                f"{self.region}a",
-                f"{self.region}b",
-                f"{self.region}c"
-            ],
+            availability_zones=self.availability_zones,
             private_subnet_ids=subnet_ids.value_as_list
         )
 
