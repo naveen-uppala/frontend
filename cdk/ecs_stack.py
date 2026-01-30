@@ -13,26 +13,59 @@ class EcsFargateServiceStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # ==================================================
-        # Parameters 
+        # Parameters (FIXED TYPES)
         # ==================================================
         service_name = CfnParameter(self, "ServiceName")
+
         image_uri = CfnParameter(self, "ImageUri")
-        container_port = CfnParameter(self, "ContainerPort", default=8080)
-        desired_count = CfnParameter(self, "DesiredCount", default=1)
-        vpc_id = CfnParameter(self, "VpcId")
-        subnet_ids = CfnParameter(self, "SubnetIds", type="List<String>")
-        cluster_name = CfnParameter(self, "ClusterName")
-        alb_arn = CfnParameter(self, "AlbArn")
-        listener_arn = CfnParameter(self, "ListenerArn")
-        listener_priority = CfnParameter(
-            self, "ListenerPriority", default=100
+
+        container_port = CfnParameter(
+            self,
+            "ContainerPort",
+            type="Number",
+            default=8080
         )
+
+        desired_count = CfnParameter(
+            self,
+            "DesiredCount",
+            type="Number",
+            default=1
+        )
+
+        listener_priority = CfnParameter(
+            self,
+            "ListenerPriority",
+            type="Number",
+            default=100
+        )
+
+        vpc_id = CfnParameter(self, "VpcId")
+
+        subnet_ids = CfnParameter(
+            self,
+            "SubnetIds",
+            type="List<String>"
+        )
+
+        cluster_name = CfnParameter(self, "ClusterName")
+
+        alb_arn = CfnParameter(self, "AlbArn")
+
+        listener_arn = CfnParameter(self, "ListenerArn")
+
+        alb_sg_id = CfnParameter(self, "AlbSecurityGroupId")
+
+        # ==================================================
+        # Convert subnet IDs → Subnet objects
+        # ==================================================
         subnets = [
             ec2.Subnet.from_subnet_id(self, f"Subnet{i}", subnet_id)
             for i, subnet_id in enumerate(subnet_ids.value_as_list)
         ]
+
         # ==================================================
-        # Import EXISTING VPC (NO lookup)
+        # Minimal VPC reference (ONLY for Target Group)
         # ==================================================
         vpc = ec2.Vpc.from_vpc_attributes(
             self,
@@ -48,36 +81,31 @@ class EcsFargateServiceStack(Stack):
             self,
             "Cluster",
             cluster_name=cluster_name.value_as_string,
-            vpc=vpc,
             security_groups=[]
         )
 
         # ==================================================
-        # Import EXISTING ALB + Listener
+        # Import EXISTING ALB + Listener (CDK v2 CORRECT)
         # ==================================================
-        alb_sg_id = CfnParameter(self, "AlbSecurityGroupId")
-        
         alb_sg = ec2.SecurityGroup.from_security_group_id(
             self,
             "AlbSecurityGroup",
             alb_sg_id.value_as_string
         )
-        
-        alb = elbv2.ApplicationLoadBalancer.from_application_load_balancer_attributes(
+
+        elbv2.ApplicationLoadBalancer.from_application_load_balancer_attributes(
             self,
             "Alb",
             load_balancer_arn=alb_arn.value_as_string,
             security_group_id=alb_sg_id.value_as_string
         )
-        
+
         listener = elbv2.ApplicationListener.from_application_listener_attributes(
             self,
             "Listener",
             listener_arn=listener_arn.value_as_string,
             security_group=alb_sg
         )
-
-
 
         # ==================================================
         # Task Definition
@@ -99,16 +127,15 @@ class EcsFargateServiceStack(Stack):
                 stream_prefix=service_name.value_as_string
             )
         )
-        
+
         container.add_port_mappings(
             ecs.PortMapping(
                 container_port=container_port.value_as_number
             )
         )
 
-
         # ==================================================
-        # Create NEW Target Group
+        # Target Group
         # ==================================================
         target_group = elbv2.ApplicationTargetGroup(
             self,
@@ -123,7 +150,6 @@ class EcsFargateServiceStack(Stack):
             )
         )
 
-        # Attach TG to EXISTING listener (path-based routing)
         listener.add_target_groups(
             "ListenerRule",
             priority=listener_priority.value_as_number,
@@ -136,7 +162,7 @@ class EcsFargateServiceStack(Stack):
         )
 
         # ==================================================
-        # ECS Fargate Service
+        # ECS Fargate Service (PUBLIC SUBNETS)
         # ==================================================
         service = ecs.FargateService(
             self,
@@ -151,5 +177,4 @@ class EcsFargateServiceStack(Stack):
             )
         )
 
-        # Register service with Target Group
         service.attach_to_application_target_group(target_group)
