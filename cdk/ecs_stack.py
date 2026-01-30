@@ -13,7 +13,7 @@ class EcsFargateServiceStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # ==================================================
-        # Parameters (FIXED TYPES)
+        # Parameters (CORRECT TYPES)
         # ==================================================
         service_name = CfnParameter(self, "ServiceName")
 
@@ -65,7 +65,7 @@ class EcsFargateServiceStack(Stack):
         ]
 
         # ==================================================
-        # Minimal VPC reference (ONLY for Target Group)
+        # Minimal VPC reference (required by CDK v2)
         # ==================================================
         vpc = ec2.Vpc.from_vpc_attributes(
             self,
@@ -75,17 +75,18 @@ class EcsFargateServiceStack(Stack):
         )
 
         # ==================================================
-        # Import EXISTING ECS Cluster
+        # Import EXISTING ECS Cluster (vpc REQUIRED in v2)
         # ==================================================
         cluster = ecs.Cluster.from_cluster_attributes(
             self,
             "Cluster",
             cluster_name=cluster_name.value_as_string,
+            vpc=vpc,
             security_groups=[]
         )
 
         # ==================================================
-        # Import EXISTING ALB + Listener (CDK v2 CORRECT)
+        # Import EXISTING ALB + Listener (CDK v2 compliant)
         # ==================================================
         alb_sg = ec2.SecurityGroup.from_security_group_id(
             self,
