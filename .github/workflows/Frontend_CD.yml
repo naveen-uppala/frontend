@@ -47,5 +47,5 @@ jobs:
           --parameters SubnetIds=subnet-051371540816c8ce3,subnet-0d7d3c3324968cb22,subnet-0d736c809f92c6aca \
           --parameters AlbSecurityGroupId=sg-03c2a5b63177abd8c \
           --parameters ClusterName=ecs-cluster-b25 \
-          --parameters AlbArn=arn:aws:elasticloadbalancing:us-east-2:074126659757:loadbalancer/app/frontend-alb/8b46f4987433b18a \
-          --parameters ListenerArn=arn:aws:elasticloadbalancing:us-east-2:074126659757:listener/app/frontend-alb/8b46f4987433b18a/1ce529680302b8f8
+          --parameters AlbArn=arn:aws:elasticloadbalancing:us-east-2:074126659757:loadbalancer/app/frontend-alb/2e20caa60f6e28f0 \
+          --parameters ListenerArn=arn:aws:elasticloadbalancing:us-east-2:074126659757:listener/app/frontend-alb/2e20caa60f6e28f0/693c395170258042
