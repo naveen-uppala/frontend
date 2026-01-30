@@ -111,12 +111,25 @@ class EcsFargateServiceStack(Stack):
         # ==================================================
         # Task Definition
         # ==================================================
+        execution_role = iam.Role(
+            self,
+            "ExecutionRole",
+            assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AmazonECSTaskExecutionRolePolicy"
+                )
+            ]
+        )
+        
         task_def = ecs.FargateTaskDefinition(
             self,
             "TaskDef",
             cpu=1024,
-            memory_limit_mib=2048
+            memory_limit_mib=2048,
+            execution_role=execution_role
         )
+
 
         container = task_def.add_container(
             "Container",
