@@ -1,4 +1,4 @@
-name: Deploy ECS Service (CDK)
+name: Frontend CD Workflow
 
 on:
   workflow_dispatch:
