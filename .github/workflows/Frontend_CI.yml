@@ -2,6 +2,10 @@ name: Frontend CI Workflow
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Select branch"
+        required: true
   # push:
   #   branches: [ "main" ]
   # pull_request:
