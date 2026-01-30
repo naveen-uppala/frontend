@@ -6,6 +6,10 @@ on:
       image_uri:
         description: "ECR Image URI"
         required: true
+  workflow_run:
+    workflows: ["Frontend CI Workflow"]
+    types:
+      - completed        
 
 jobs:
   deploy:
