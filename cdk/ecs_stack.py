@@ -61,13 +61,13 @@ class EcsFargateServiceStack(Stack):
             load_balancer_arn=alb_arn.value_as_string,
             security_group_id="sg-placeholder"
         )
-
+        
         listener = elbv2.ApplicationListener.from_application_listener_attributes(
             self,
             "Listener",
-            listener_arn=listener_arn.value_as_string,
-            security_group_id="sg-placeholder"
+            listener_arn=listener_arn.value_as_string
         )
+
 
         # ==================================================
         # Task Definition
