@@ -3,8 +3,8 @@ name: Deploy ECS Service (CDK)
 on:
   workflow_dispatch:
     inputs:
-      image_uri:
-        description: "ECR Image URI"
+      image_tag:
+        description: "ECR Image TAG"
         required: true
   workflow_run:
     workflows: ["Frontend CI Workflow"]
@@ -38,17 +38,30 @@ jobs:
         cd cdk
         cdk bootstrap aws://074126659757/$AWS_REGION
 
-    - name: Get last successful build number
-      id: last_successful_build
+    - name: Resolve image tag
+      id: resolve_image_tag
       run: |
         RUN_NUMBER=$(curl -s \
-          -H "Authorization: Bearer ${{ secrets.GITHUBTOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github+json" \
           "https://api.github.com/repos/${{ github.repository }}/actions/workflows/Frontend_CI.yml/runs?status=success&per_page=1" \
           | jq -r '.workflow_runs[0].run_number')
     
-        echo "run_number=$RUN_NUMBER" >> $GITHUB_OUTPUT
-        
+        if [ "$RUN_NUMBER" = "null" ] || [ -z "$RUN_NUMBER" ]; then
+          echo "No successful build found"
+          exit 1
+        fi
+    
+        if [ -n "${{ inputs.image_tag }}" ]; then
+          TAG="${{ inputs.image_tag }}"
+          echo "Using input tag: $TAG"
+        else
+          TAG="$RUN_NUMBER"
+          echo "Using last successful build tag: $TAG"
+        fi
+        echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+
+
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2      
@@ -57,7 +70,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: ${{ github.event.repository.name }}
-        IMAGE_TAG: ${{ steps.last_successful_build.outputs.run_number }}
+        IMAGE_TAG: ${{ steps.resolve_image_tag.outputs.image_tag }}
       run: |
         cd cdk
         cdk deploy \
