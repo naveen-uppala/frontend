@@ -9,6 +9,7 @@ on:
 
 jobs:
   build:
+    environment: dev 
     runs-on: ubuntu-latest
     steps:
     - name: Clone Repository
