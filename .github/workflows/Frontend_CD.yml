@@ -37,16 +37,35 @@ jobs:
       run: |
         cd cdk
         cdk bootstrap aws://074126659757/$AWS_REGION
+
+    - name: Get last successful build number
+      id: last_successful_build
+      run: |
+        RUN_NUMBER=$(curl -s \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/Frontend_CI.yml/runs?status=success&per_page=1" \
+          | jq -r '.workflow_runs[0].run_number')
+    
+        echo "run_number=$RUN_NUMBER" >> $GITHUB_OUTPUT
         
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2      
+      
     - name: CDK Deploy
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ github.event.repository.name }}
+        IMAGE_TAG: ${{ steps.last_successful_build.outputs.run_number }}
       run: |
         cd cdk
         cdk deploy \
           --require-approval never \
           --parameters ServiceName=frontend-service \
-          --parameters ImageUri=${{ inputs.image_uri }} \
+          --parameters ImageUri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
           --parameters ContainerPort=5000 \
-          --parameters DesiredCount=1 \
+          --parameters DesiredCount=2 \
           --parameters VpcId=vpc-0cf3030054f11a3c1 \
           --parameters SubnetIds=subnet-051371540816c8ce3,subnet-0d7d3c3324968cb22,subnet-0d736c809f92c6aca \
           --parameters AlbSecurityGroupId=sg-03c2a5b63177abd8c \
