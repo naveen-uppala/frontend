@@ -99,12 +99,13 @@ class EcsFargateServiceStack(Stack):
                 stream_prefix=service_name.value_as_string
             )
         )
-
+        
         container.add_port_mappings(
             ecs.PortMapping(
-                container_port=int(container_port.value_as_string)
+                container_port=container_port.value_as_number
             )
         )
+
 
         # ==================================================
         # Create NEW Target Group
@@ -113,7 +114,7 @@ class EcsFargateServiceStack(Stack):
             self,
             "TargetGroup",
             vpc=vpc,
-            port=int(container_port.value_as_string),
+            port=container_port.value_as_number,
             protocol=elbv2.ApplicationProtocol.HTTP,
             target_type=elbv2.TargetType.IP,
             health_check=elbv2.HealthCheck(
@@ -125,7 +126,7 @@ class EcsFargateServiceStack(Stack):
         # Attach TG to EXISTING listener (path-based routing)
         listener.add_target_groups(
             "ListenerRule",
-            priority=int(listener_priority.value_as_string),
+            priority=listener_priority.value_as_number,
             conditions=[
                 elbv2.ListenerCondition.path_patterns(
                     [f"/{service_name.value_as_string}/*"]
@@ -143,7 +144,7 @@ class EcsFargateServiceStack(Stack):
             service_name=service_name.value_as_string,
             cluster=cluster,
             task_definition=task_def,
-            desired_count=int(desired_count.value_as_string),
+            desired_count=desired_count.value_as_number,
             assign_public_ip=True,
             vpc_subnets=ec2.SubnetSelection(
                 subnets=subnets
