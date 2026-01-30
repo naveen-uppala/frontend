@@ -168,11 +168,7 @@ class EcsFargateServiceStack(Stack):
         listener.add_target_groups(
             "ListenerRule",
             priority=listener_priority.value_as_number,
-            conditions=[
-                elbv2.ListenerCondition.path_patterns(
-                    [f"/{service_name.value_as_string}/*"]
-                )
-            ],
+            conditions=[elbv2.ListenerCondition.path_patterns(["/*"])],
             target_groups=[target_group]
         )
 
