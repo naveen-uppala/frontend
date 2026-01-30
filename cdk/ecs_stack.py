@@ -13,26 +13,24 @@ class EcsFargateServiceStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # ==================================================
-        # Parameters (Harness-style)
+        # Parameters 
         # ==================================================
         service_name = CfnParameter(self, "ServiceName")
         image_uri = CfnParameter(self, "ImageUri")
         container_port = CfnParameter(self, "ContainerPort", default=8080)
         desired_count = CfnParameter(self, "DesiredCount", default=1)
-
         vpc_id = CfnParameter(self, "VpcId")
-        subnet_ids = CfnParameter(
-            self, "SubnetIds", type="List<String>"
-        )
-
+        subnet_ids = CfnParameter(self, "SubnetIds", type="List<String>")
         cluster_name = CfnParameter(self, "ClusterName")
-
         alb_arn = CfnParameter(self, "AlbArn")
         listener_arn = CfnParameter(self, "ListenerArn")
         listener_priority = CfnParameter(
             self, "ListenerPriority", default=100
         )
-
+        subnets = [
+            ec2.Subnet.from_subnet_id(self, f"Subnet{i}", subnet_id)
+            for i, subnet_id in enumerate(subnet_ids.value_as_list)
+        ]
         # ==================================================
         # Import EXISTING VPC (NO lookup)
         # ==================================================
@@ -40,8 +38,7 @@ class EcsFargateServiceStack(Stack):
             self,
             "Vpc",
             vpc_id=vpc_id.value_as_string,
-            availability_zones=self.availability_zones,
-            private_subnet_ids=subnet_ids.value_as_list
+            availability_zones=["dummy"]
         )
 
         # ==================================================
@@ -137,7 +134,10 @@ class EcsFargateServiceStack(Stack):
             cluster=cluster,
             task_definition=task_def,
             desired_count=int(desired_count.value_as_string),
-            assign_public_ip=False
+            assign_public_ip=True,
+            vpc_subnets=ec2.SubnetSelection(
+                subnets=subnets
+            )
         )
 
         # Register service with Target Group
