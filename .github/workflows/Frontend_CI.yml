@@ -6,8 +6,8 @@ on:
       branch:
         description: "Select branch"
         required: true
-  push:
-    branches: [ "main" ]
+  # push:
+  #   branches: [ "main" ]
   # pull_request:
   #   branches: [ "main" ]
 
