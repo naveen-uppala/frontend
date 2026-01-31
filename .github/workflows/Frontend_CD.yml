@@ -28,15 +28,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ vars.AWS_REGION }}
 
-    - name: Install dependencies
-      run: |
-        pip install -r cdk/requirements.txt
-        npm install -g aws-cdk
-        
-    - name: CDK Bootstrap
-      run: |
-        cd cdk
-        cdk bootstrap aws://074126659757/$AWS_REGION
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Resolve image tag
       id: resolve_image_tag
@@ -59,12 +53,17 @@ jobs:
           TAG="$RUN_NUMBER"
           echo "Using last successful build tag: $TAG"
         fi
-        echo "image_tag=$TAG" >> $GITHUB_OUTPUT
+        echo "image_tag=$TAG" >> $GITHUB_OUTPUT      
 
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2      
+    - name: Install dependencies
+      run: |
+        pip install -r cdk/requirements.txt
+        npm install -g aws-cdk
+        
+    - name: CDK Bootstrap
+      run: |
+        cd cdk
+        cdk bootstrap aws://074126659757/$AWS_REGION 
       
     - name: CDK Deploy
       env:
