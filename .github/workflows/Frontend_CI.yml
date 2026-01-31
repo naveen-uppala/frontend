@@ -12,10 +12,6 @@ jobs:
     environment: dev 
     runs-on: ubuntu-latest
     steps:
-    - name: Case check
-      run: |
-        echo "ENV=${{ vars.AWS_REGION }}"
-
     - name: Clone Repository
       uses: actions/checkout@v4
       
