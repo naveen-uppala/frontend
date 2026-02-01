@@ -1,4 +1,10 @@
-Adding a random text for testing Harness trigger
+# My Awesome Project 🚀
+
+[![CD](https://github.com/naveen-uppala/frontend/actions/workflows/Frontend_CD.yml/badge.svg)](
+https://github.com/naveen-uppala/frontend/blob/main/.github/workflows/Frontend_CD.yml
+)
+
+
 ## Available Scripts
 
 In the project directory, you can run:
