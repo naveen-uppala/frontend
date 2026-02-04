@@ -28,3 +28,37 @@ env:
           credentials:
             username: "admin@juice-sh.op"
             password: "admin123"
+
+jobs:
+  # 1️⃣ Spider the application as the authenticated user
+  - type: spider
+    parameters:
+      context: "juice-shop-context"
+      user: "admin-user"
+      maxDuration: 5
+
+  # 2️⃣ Active scan (authenticated)
+  - type: activeScan
+    parameters:
+      context: "juice-shop-context"
+      user: "admin-user"
+      maxDuration: 5
+
+  # 3️⃣ Generate reports
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: .
+      reportFile: report_html.html
+
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: .
+      reportFile: report_json.json
+
+  - type: report
+    parameters:
+      template: traditional-md
+      reportDir: .
+      reportFile: report_md.md
