@@ -23,7 +23,7 @@ jobs:
       - name: OWASP ZAP Automation Scan
         # uses: zaproxy/action-baseline@v0.15.0
         # uses: zaproxy/action-full-scan@v0.10.0
-        uses: zaproxy/action-automation@v0.5.0
+        uses: zaproxy/action-zap-automation@v0.5.0
         with:
           target: 'https://juice-shop.herokuapp.com/'
           plan: zap.yaml
