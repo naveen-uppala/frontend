@@ -20,7 +20,11 @@ jobs:
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: 'https://juice-shop.herokuapp.com/'
-          cmd_options: '-a -m 5'
+          cmd_options: >
+            -a -m 5
+            -r zap_scan_report.html
+            -w zap_scan_report.md
+            -J zap_scan_report.json
           fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -31,11 +35,9 @@ jobs:
           echo "Files:"
           ls -la
           
-
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
           name: zap_scan_report
           path: |
-            zap_scan_report.html
-            zap_scan_report.md
+            zap_scan_report.*
