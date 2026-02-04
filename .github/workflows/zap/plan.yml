@@ -21,7 +21,7 @@ env:
           loggedOutRegex: "Login"
 
       sessionManagement:
-        method: "cookieBased"
+        method: cookie
 
       users:
         - name: "admin-user"
@@ -30,21 +30,20 @@ env:
             password: "admin123"
 
 jobs:
-  # 1️⃣ Spider the application as the authenticated user
+  # 1️⃣ Authenticated spider
   - type: spider
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
       maxDuration: 5
 
-  # 2️⃣ Active scan (authenticated)
+  # 2️⃣ Authenticated active scan
   - type: activeScan
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
-      maxDuration: 5
 
-  # 3️⃣ Generate reports
+  # 3️⃣ Reports
   - type: report
     parameters:
       template: traditional-html
