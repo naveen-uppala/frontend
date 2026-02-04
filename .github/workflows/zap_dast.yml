@@ -22,7 +22,7 @@ jobs:
 
       - name: OWASP ZAP Automation Scan
         uses: zaproxy/action-af@v0.2.0
-        continue-on-error: true
+        continue-on-error: false
         with:
           plan: '.github/workflows/zap/plan.yml'
 
