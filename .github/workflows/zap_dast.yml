@@ -38,4 +38,6 @@ jobs:
         with:
           name: zap_scan_report
           path: |
-            zap_scan_report.*
+            report_html.html
+            report_json.json
+            report_md.md
