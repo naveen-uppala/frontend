@@ -2,6 +2,10 @@ name: DAST Security Scan
 
 on:
   workflow_dispatch:
+  
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   dast-scan:
@@ -18,7 +22,7 @@ jobs:
           target: 'https://juice-shop.herokuapp.com/'
           cmd_options: '-a -m 5'
           fail_action: false
-          token: ${{ secrets.GITHUBTOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
