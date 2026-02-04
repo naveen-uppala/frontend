@@ -20,6 +20,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: 'https://juice-shop.herokuapp.com/'
+          config_file: zap.yaml
           cmd_options: >
             -a -m 5
             -r zap_scan_report.html
