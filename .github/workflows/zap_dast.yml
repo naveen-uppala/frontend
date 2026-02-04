@@ -16,6 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Fix permissions for ZAP
+        run: |
+          chmod -R 777 .
+
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
