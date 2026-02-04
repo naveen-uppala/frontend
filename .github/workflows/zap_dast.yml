@@ -24,6 +24,14 @@ jobs:
           fail_action: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: List files after ZAP scan
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files:"
+          ls -la
+          
+
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
