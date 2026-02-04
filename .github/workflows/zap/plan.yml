@@ -30,6 +30,20 @@ env:
             password: "admin"
 
 jobs:
+  - type: requestor
+    parameters:
+      context: "juice-shop-context"
+      user: "admin-user"
+    requests:
+      - url: "https://juice-shop.herokuapp.com/rest/admin/application-configuration"
+        method: GET
+    tests:
+      - name: "Authentication must succeed"
+        onFail: FAIL
+        statistic: stats.httpstatuscodes.200
+        operator: ">"
+        value: 0
+
   - type: spider
     parameters:
       context: "juice-shop-context"
