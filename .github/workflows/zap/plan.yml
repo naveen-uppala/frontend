@@ -1,0 +1,30 @@
+env:
+  contexts:
+    - name: "juice-shop-context"
+      urls:
+        - "https://juice-shop.herokuapp.com"
+      includePaths:
+        - "https://juice-shop.herokuapp.com/.*"
+
+      authentication:
+        method: "json"
+        parameters:
+          loginUrl: "https://juice-shop.herokuapp.com/rest/user/login"
+          loginRequestData: |
+            {
+              "email": "{%username%}",
+              "password": "{%password%}"
+            }
+        verification:
+          method: "poll"
+          loggedInRegex: "Logout"
+          loggedOutRegex: "Login"
+
+      sessionManagement:
+        method: "cookieBased"
+
+      users:
+        - name: "admin-user"
+          credentials:
+            username: "admin@juice-sh.op"
+            password: "admin123"
