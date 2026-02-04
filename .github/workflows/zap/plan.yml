@@ -30,20 +30,18 @@ env:
             password: "admin123"
 
 jobs:
-  # 1️⃣ Authenticated spider
   - type: spider
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
       maxDuration: 5
 
-  # 2️⃣ Authenticated active scan
   - type: activeScan
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
+      maxScanDurationInMins: 5
 
-  # 3️⃣ Reports
   - type: report
     parameters:
       template: traditional-html
