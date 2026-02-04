@@ -1,0 +1,33 @@
+name: DAST Security Scan
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+
+jobs:
+  dast-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # Run OWASP ZAP baseline scan
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: 'https://your-app-staging.example.com'
+          rules_file_name: '.zap/rules.tsv'   # optional custom rules
+          cmd_options: '-a'                  # passive + alpha rules
+          token: ${{ secrets.GITHUBTOKEN }}
+
+      # Upload the report as artifact
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap_scan_report
+          path: |
+            ./zap_scan_report.html
+            ./zap_scan_report.md
