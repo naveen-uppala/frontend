@@ -27,7 +27,7 @@ env:
         - name: "admin-user"
           credentials:
             username: "admin@juice-sh.op"
-            password: "admin123"
+            password: "admin"
 
 jobs:
   - type: spider
