@@ -21,12 +21,13 @@ jobs:
           chmod -R 777 .
 
       - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.15.0
+        # uses: zaproxy/action-baseline@v0.15.0
+        uses: zaproxy/action-full-scan@v0.10.0
         with:
           target: 'https://juice-shop.herokuapp.com/'
           config_file: zap.yaml
           cmd_options: >
-            -a -m 5
+            -m 5
             -r zap_scan_report.html
             -w zap_scan_report.md
             -J zap_scan_report.json
