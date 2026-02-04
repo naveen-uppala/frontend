@@ -1,63 +1,41 @@
-env:
-  contexts:
-    - name: "juice-shop-context"
-      urls:
-        - "https://juice-shop.herokuapp.com"
-      includePaths:
-        - "https://juice-shop.herokuapp.com/.*"
+name: DAST Security Scan
 
-      authentication:
-        method: "json"
-        parameters:
-          loginUrl: "https://juice-shop.herokuapp.com/rest/user/login"
-          loginRequestData: |
-            {
-              "email": "{%username%}",
-              "password": "{%password%}"
-            }
-        verification:
-          method: "poll"
-          loggedInRegex: "Logout"
-          loggedOutRegex: "Login"
-
-      sessionManagement:
-        method: cookie
-
-      users:
-        - name: "admin-user"
-          credentials:
-            username: "admin@juice-sh.op"
-            password: "admin123"
+on:
+  workflow_dispatch:
+  
+permissions:
+  contents: read
+  issues: write
 
 jobs:
-  # 1️⃣ Authenticated spider
-  - type: spider
-    parameters:
-      context: "juice-shop-context"
-      user: "admin-user"
-      maxDuration: 5
+  dast-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-  # 2️⃣ Authenticated active scan
-  - type: activeScan
-    parameters:
-      context: "juice-shop-context"
-      user: "admin-user"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
 
-  # 3️⃣ Reports
-  - type: report
-    parameters:
-      template: traditional-html
-      reportDir: .
-      reportFile: report_html.html
+      - name: Fix permissions for ZAP
+        run: |
+          chmod -R 777 .
 
-  - type: report
-    parameters:
-      template: traditional-json
-      reportDir: .
-      reportFile: report_json.json
+      - name: OWASP ZAP Automation Scan
+        uses: zaproxy/action-af@v0.2.0
+        with:
+          plan: '.github/workflows/zap/plan.yml'
 
-  - type: report
-    parameters:
-      template: traditional-md
-      reportDir: .
-      reportFile: report_md.md
+
+      - name: List files after ZAP scan
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files:"
+          ls -la
+          
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap_scan_report
+          path: |
+            zap_scan_report.*
