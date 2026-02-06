@@ -6,7 +6,6 @@ env:
       includePaths:
         - https://juice-shop.herokuapp.com/.*
 
-      # 🔐 Script-based authentication (fail hard)
       authentication:
         method: script
         parameters:
@@ -21,29 +20,26 @@ env:
             username: admin@juice-sh.op
             password: admin123
 
-# 📜 REGISTER THE SCRIPT (THIS WAS MISSING)
+# 📜 REGISTER AUTH SCRIPT (CORRECT SYNTAX)
 scripts:
   - name: juice-shop-auth
     type: authentication
     engine: ECMAScript
-    file: .github/workflows/zap/scripts/juice-shop-auth.js
+    script: .github/workflows/zap/scripts/juice-shop-auth.js
 
 jobs:
-  # 🕷 Authenticated spider
   - type: spider
     parameters:
       context: juice-shop-context
       user: admin-user
       maxDuration: 5
 
-  # 🔥 Authenticated active scan
   - type: activeScan
     parameters:
       context: juice-shop-context
       user: admin-user
       maxScanDurationInMins: 5
 
-  # 📄 Reports
   - type: report
     parameters:
       template: traditional-html
