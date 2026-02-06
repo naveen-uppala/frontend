@@ -6,25 +6,27 @@ env:
       includePaths:
         - https://juice-shop.herokuapp.com/.*
 
-      # 🔐 SCRIPT-BASED AUTHENTICATION (FAILS HARD IF LOGIN FAILS)
+      # 🔐 Script-based authentication (fail hard)
       authentication:
         method: script
         parameters:
-          scriptName: juice-shop-auth
-          scriptType: authentication
-          scriptEngine: ECMAScript
-          scriptFile: .github/workflows/zap/scripts/juice-shop-auth.js
+          script: juice-shop-auth
 
-      # 🍪 Session handled via cookies
       sessionManagement:
         method: cookie
 
-      # 👤 Authenticated user
       users:
         - name: admin-user
           credentials:
             username: admin@juice-sh.op
             password: admin123
+
+# 📜 REGISTER THE SCRIPT (THIS WAS MISSING)
+scripts:
+  - name: juice-shop-auth
+    type: authentication
+    engine: ECMAScript
+    file: .github/workflows/zap/scripts/juice-shop-auth.js
 
 jobs:
   # 🕷 Authenticated spider
