@@ -1,59 +1,47 @@
 env:
   contexts:
-    - name: "juice-shop-context"
+    - name: juice-shop-context
       urls:
-        - "https://juice-shop.herokuapp.com"
+        - https://juice-shop.herokuapp.com
       includePaths:
-        - "https://juice-shop.herokuapp.com/.*"
+        - https://juice-shop.herokuapp.com/.*
 
+      # 🔐 SCRIPT-BASED AUTHENTICATION (FAILS HARD IF LOGIN FAILS)
       authentication:
-        method: "json"
+        method: script
         parameters:
-          loginUrl: "https://juice-shop.herokuapp.com/rest/user/login"
-          loginRequestData: |
-            {
-              "email": "{%username%}",
-              "password": "{%password%}"
-            }
-        verification:
-          method: "poll"
-          loggedInRegex: "Logout"
-          loggedOutRegex: "Login"
+          scriptName: juice-shop-auth
+          scriptType: authentication
+          scriptEngine: ECMAScript
+          scriptFile: .github/workflows/zap/scripts/juice-shop-auth.js
 
+      # 🍪 Session handled via cookies
       sessionManagement:
         method: cookie
 
+      # 👤 Authenticated user
       users:
-        - name: "admin-user"
+        - name: admin-user
           credentials:
-            username: "admin@juice-sh.op"
-            password: "admin"
+            username: admin@juice-sh.op
+            password: admin123
 
 jobs:
-  # Hard auth validation (FAILS if auth fails)
-  - type: requestor
-    parameters:
-      user: "admin-user"
-      failIfStatusCodes: "401,403"
-    requests:
-      - url: "https://juice-shop.herokuapp.com/rest/admin/application-configuration"
-        method: GET
-
-  # Authenticated spider
+  # 🕷 Authenticated spider
   - type: spider
     parameters:
-      context: "juice-shop-context"
-      user: "admin-user"
+      context: juice-shop-context
+      user: admin-user
       maxDuration: 5
 
-  # Authenticated active scan
+  # 🔥 Authenticated active scan
   - type: activeScan
     parameters:
-      context: "juice-shop-context"
-      user: "admin-user"
+      context: juice-shop-context
+      user: admin-user
       maxScanDurationInMins: 5
 
-  # Reports
+  # 📄 Reports
   - type: report
     parameters:
       template: traditional-html
