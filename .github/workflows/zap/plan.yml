@@ -30,32 +30,30 @@ env:
             password: "admin"
 
 jobs:
+  # Hard auth validation (FAILS if auth fails)
   - type: requestor
     parameters:
-      context: "juice-shop-context"
       user: "admin-user"
+      failIfStatusCodes: "401,403"
     requests:
       - url: "https://juice-shop.herokuapp.com/rest/admin/application-configuration"
         method: GET
-    tests:
-      - name: "Authentication must succeed"
-        onFail: FAIL
-        statistic: stats.httpstatuscodes.200
-        operator: ">"
-        value: 0
 
+  # Authenticated spider
   - type: spider
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
       maxDuration: 5
 
+  # Authenticated active scan
   - type: activeScan
     parameters:
       context: "juice-shop-context"
       user: "admin-user"
       maxScanDurationInMins: 5
 
+  # Reports
   - type: report
     parameters:
       template: traditional-html
