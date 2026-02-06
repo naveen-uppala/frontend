@@ -9,7 +9,7 @@ env:
       authentication:
         method: script
         parameters:
-          script: juice-shop-auth
+          scriptName: juice-shop-auth   # ✅ THIS IS THE KEY FIX
 
       sessionManagement:
         method: cookie
@@ -20,7 +20,6 @@ env:
             username: admin@juice-sh.op
             password: admin123
 
-# 🔐 INLINE AUTH SCRIPT (NO FILE PATH ISSUES)
 scripts:
   - name: juice-shop-auth
     type: authentication
@@ -45,7 +44,7 @@ scripts:
 
           helper.sendAndReceive(msg);
 
-          // 🔴 FAIL HARD if authentication token is missing
+          // 🔴 FAIL HARD IF AUTH FAILS
           var cookies = msg.getResponseHeader().getHeaderValues("Set-Cookie");
           if (cookies == null || cookies.toString().indexOf("token=") === -1) {
               throw "Authentication failed: token cookie not found";
