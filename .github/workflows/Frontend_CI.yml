@@ -9,11 +9,19 @@ on:
 
 jobs:
   build:
-    environment: dev 
     runs-on: ubuntu-latest
     steps:
     - name: Clone Repository
       uses: actions/checkout@v4
+      
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: javascript, python  # Change if needed (e.g., python, java, csharp)
+        queries: security-extended
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4      
       
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
