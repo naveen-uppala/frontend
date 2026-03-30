@@ -1,4 +1,4 @@
-name: Customer CD EKS Workflow
+name: Frontend CD EKS Workflow
 
 on:
   workflow_dispatch:
