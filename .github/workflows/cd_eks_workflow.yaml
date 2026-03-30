@@ -1,0 +1,119 @@
+name: Customer CD EKS Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: false
+      replicaCount:
+        description: "Number of replicas"
+        required: false        
+  workflow_run:
+    workflows: ["Customer CI Pipeline"]
+    types:
+      - completed
+
+permissions:
+  id-token: write      
+
+jobs:
+  DEPLOY:
+    runs-on: ubuntu-latest
+    if: >
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      }}
+
+    steps:
+      #  Checkout Helm repo
+      - name: Checkout Helm charts repo
+        uses: actions/checkout@v4
+        with:
+          repository: naveen-uppala/Infra-App-Deployment
+          # path: App/helm-charts
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      #  AWS Auth
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ASSUME_ROLE }}
+
+      #  Login to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      #  Configure kubectl
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig \
+            --region ${{ vars.AWS_REGION }} \
+            --name ${{ vars.EKS_CLUSTER_NAME }}
+
+      #  Install Helm
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      #  Use CI run number as image tag
+      - name: Set Image Tag
+        id: resolve_image_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            # Manual dispatch with explicit tag
+            TAG="${{ github.event.inputs.image_tag }}"
+      
+          elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+            # Triggered by CI pipeline — use its run number directly
+            TAG="${{ github.event.workflow_run.run_number }}"
+      
+          else
+            # Manual dispatch without tag — fetch last successful CI run number
+            echo "No tag provided, fetching last successful CI run..."
+            TAG=$(gh api \
+              "/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/workflows/ci_workflow.yaml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].run_number')
+          fi
+      
+          if [ -z "$TAG" ]; then
+            echo "ERROR: Could not determine image tag"
+            exit 1
+          fi
+      
+          echo "Resolved image tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      #  Deploy
+      - name: Deploy to EKS via Helm
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.resolve_image_tag.outputs.tag }}
+        run: |
+          CMD="helm upgrade --install ${{ vars.HELM_RELEASE_NAME }} ./App/helm-charts/${{ vars.HELM_CHART_NAME }} \
+            --namespace ${{ vars.K8S_NAMESPACE }} \
+            --set image.repository=$ECR_REGISTRY/${{ github.event.repository.name }} \
+            --set image.tag=$IMAGE_TAG \
+            --set image.pullPolicy=Always"
+
+      
+          #  Add replicaCount only if provided
+          if [ -n "${{ github.event.inputs.replicaCount }}" ]; then
+            CMD="$CMD --set replicaCount=${{ github.event.inputs.replicaCount }}"
+          fi
+      
+          echo "Running Helm command:"
+          echo "$CMD"
+      
+          eval $CMD
+
+      #  Verify
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/${{ vars.HELM_RELEASE_NAME }} \
+            --namespace ${{ vars.K8S_NAMESPACE }} \
+            --timeout=3m
