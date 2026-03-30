@@ -6,10 +6,10 @@ on:
       image_tag:
         description: "ECR Image TAG"
         required: true
-  workflow_run:
-    workflows: ["Frontend CI Workflow"]
-    types:
-      - completed        
+  # workflow_run:
+  #   workflows: ["Frontend CI Workflow"]
+  #   types:
+  #     - completed        
 
 jobs:
   deploy:
