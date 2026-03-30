@@ -10,7 +10,7 @@ on:
         description: "Number of replicas"
         required: false        
   workflow_run:
-    workflows: ["Customer CI Pipeline"]
+    workflows: ["Frontend CI Workflow"]
     types:
       - completed
 
