@@ -6,7 +6,7 @@ app = cdk.App()
 
 EcsFargateServiceStack(
     app,
-    "ecs-fargate-service",
+    "ecs-fargate-service-1",
     env=cdk.Environment(
         account=cdk.Aws.ACCOUNT_ID,
         region=cdk.Aws.REGION,
