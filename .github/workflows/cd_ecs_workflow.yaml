@@ -1,4 +1,4 @@
-name: Frontend ECS CD Workflow
+name: Frontend CD ECS Workflow
 
 on:
   workflow_dispatch:
