@@ -66,7 +66,7 @@ jobs:
     - name: CDK Bootstrap
       run: |
         cd cdk
-        cdk bootstrap aws://074126659757/$AWS_REGION 
+        cdk bootstrap aws://623900187958/$AWS_REGION 
       
     - name: CDK Deploy
       env:
