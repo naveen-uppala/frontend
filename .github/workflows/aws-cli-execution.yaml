@@ -21,6 +21,8 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker Image & Push to ECR
-        run: aws cloudformation delete-stack --stack-name ecs-fargate-service --role-arn arn:aws:iam::623900187958:role/github_ecr_role
+        run: aws cloudformation delete-stack --stack-name ecs-fargate-service
+
+
 
 
