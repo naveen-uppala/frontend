@@ -21,13 +21,24 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false --coverageReporters=lcov text",
     "eject": "react-scripts eject"
   },
-
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
+    ]
+  },
+  "jest": {
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/index.js",
+      "!src/reportWebVitals.js",
+      "!src/setupTests.js",
+      "!src/**/*.test.{js,jsx}",
+      "!src/**/*.spec.{js,jsx}"
     ]
   },
   "browserslist": {
@@ -43,5 +54,4 @@
     ]
   },
   "proxy": "http://localhost:5000"
-
 }
