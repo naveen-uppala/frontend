@@ -39,4 +39,4 @@ jobs:
           projectBaseDir: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: 71c5d60606db3afdcefd577fb5abf611d6ba9cde
