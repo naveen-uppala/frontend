@@ -1,33 +1,50 @@
-name: Frontend CI Workflow
-
+name: Frontend CI workflow
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 permissions:
+  contents: read
   id-token: write
-    
+
 jobs:
-  BUILD:
+  build:
     runs-on: ubuntu-latest
+    env:
+      ECR_REPOSITORY: ${{ github.event.repository.name }}
+      IMAGE_TAG: ${{ github.run_number }}
+
     steps:
-      - name: Clone Repository
+      - name: Clone repository
         uses: actions/checkout@v4
-             
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4  
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ASSUME_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }} 
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker Image & Push to ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY:  ${{ github.event.repository.name }}
-          IMAGE_TAG: ${{ github.run_number }}
+      - name: Export ECR registry to env
+        run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Build Docker image
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+
+      - name: Run Snyk container scan
+        continue-on-error: true
+        uses: snyk/actions/docker@v0.4.0
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          args: --file=Dockerfile --severity-threshold=high
+
+      - name: Push Docker image to ECR
+        run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
