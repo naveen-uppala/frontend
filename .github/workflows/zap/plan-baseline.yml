@@ -7,7 +7,7 @@ env:
         - "${TARGET_URL}/.*"
 
   parameters:
-    failOnError:      false
+    failOnError:      true
     failOnWarning:    false
     progressToStdout: true
 
