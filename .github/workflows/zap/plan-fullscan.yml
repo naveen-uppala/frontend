@@ -21,7 +21,7 @@ jobs:
       context:     "fullscan-context"
       maxDuration: 3
 
-  - type: passiveScan
+  - type: pscan          # ← fix here too
     parameters:
       maxAlertsPerRule: 10
       scanOnlyInScope:  true

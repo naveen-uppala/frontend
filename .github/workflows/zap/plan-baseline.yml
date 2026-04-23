@@ -17,7 +17,7 @@ jobs:
       context:     "baseline-context"
       maxDuration: 2
 
-  - type: passiveScan
+  - type: pscan          # ← was "passiveScan" — correct name is "pscan"
     parameters:
       maxAlertsPerRule: 10
       scanOnlyInScope:  true
