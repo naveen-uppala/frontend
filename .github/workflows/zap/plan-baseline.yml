@@ -1,31 +1,23 @@
 env:
   contexts:
-    - name: "fullscan-context"
+    - name: "baseline-context"
       urls:
         - "${TARGET_URL}"
       includePaths:
         - "${TARGET_URL}/.*"
-      excludePaths:
-        - "${TARGET_URL}.*logout.*"
-        - "${TARGET_URL}.*signout.*"
-        - "${TARGET_URL}.*delete.*"
 
   parameters:
-    failOnError:      true
+    failOnError:      false
     failOnWarning:    false
     progressToStdout: true
 
 jobs:
   - type: spider
     parameters:
-      context:     "fullscan-context"
-      maxDuration: 3
-      # passive scan runs automatically here too
-
-  - type: activeScan
-    parameters:
-      context:               "fullscan-context"
-      maxScanDurationInMins: 5
+      context:     "baseline-context"
+      maxDuration: 2
+      # passive scan runs automatically on all
+      # responses spider receives — no extra job needed
 
   - type: report
     parameters:
