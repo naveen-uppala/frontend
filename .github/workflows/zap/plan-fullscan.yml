@@ -20,11 +20,7 @@ jobs:
     parameters:
       context:     "fullscan-context"
       maxDuration: 3
-
-  - type: pscan          # ← fix here too
-    parameters:
-      maxAlertsPerRule: 10
-      scanOnlyInScope:  true
+      # passive scan runs automatically here too
 
   - type: activeScan
     parameters:
