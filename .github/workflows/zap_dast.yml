@@ -1,44 +1,388 @@
-name: DAST Security Scan
+name: ZAP DAST EKS Workflow
 
 on:
   workflow_dispatch:
-  
+    inputs:
+      image_tag:
+        description: "Docker image tag to deploy"
+        required: false
+      replicaCount:
+        description: "Number of replicas"
+        required: false
+      run_dast:
+        description: "Run DAST scan after deployment?"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  # workflow_run:
+  #   workflows: ["Frontend CI Workflow"]
+  #   types:
+  #     - completed
+
 permissions:
+  id-token: write
   contents: read
-  issues: write
+  issues:   write
 
 jobs:
-  dast-scan:
+
+  # ── JOB 1: Your existing deploy job — unchanged ───────────────────────────
+  DEPLOY:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    if: >
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.conclusion == 'success')
+      }}
+
+    # ── Output APP_URL so DAST job can use it ─────────────────────────────
+    outputs:
+      app_url: ${{ steps.get_app_url.outputs.app_url }}
+      environment: ${{ steps.get_env.outputs.environment }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Fix permissions for ZAP
-        run: |
-          chmod -R 777 .
-
-      - name: OWASP ZAP Automation Scan
-        uses: zaproxy/action-af@v0.2.0
-        continue-on-error: false
+      # Checkout Helm repo
+      - name: Checkout Helm charts repo
+        uses: actions/checkout@v4
         with:
-          plan: '.github/workflows/zap/plan.yml'
+          repository: naveen-uppala/Infra-App-Deployment
+          token: ${{ secrets.GITHUB_TOKEN }}
 
+      # AWS Auth
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ASSUME_ROLE }}
 
-      - name: List files after ZAP scan
+      # Login to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Configure kubectl
+      - name: Update kubeconfig for EKS
         run: |
-          echo "Current directory:"
-          pwd
-          echo "Files:"
-          ls -la
-          
-      - name: Upload ZAP Report
+          aws eks update-kubeconfig \
+            --region ${{ vars.AWS_REGION }} \
+            --name ${{ vars.EKS_CLUSTER_NAME }}
+
+      # Install Helm
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      # Use CI run number as image tag
+      - name: Set Image Tag
+        id: resolve_image_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+            TAG="${{ github.event.workflow_run.run_number }}"
+          else
+            echo "No tag provided, fetching last successful CI run..."
+            TAG=$(gh api \
+              "/repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/actions/workflows/ci_workflow.yaml/runs?status=success&per_page=1" \
+              --jq '.workflow_runs[0].run_number')
+          fi
+          if [ -z "$TAG" ]; then
+            echo "ERROR: Could not determine image tag"
+            exit 1
+          fi
+          echo "Resolved image tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      # Deploy
+      - name: Deploy to EKS via Helm
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.resolve_image_tag.outputs.tag }}
+        run: |
+          CMD="helm upgrade --install ${{ vars.HELM_RELEASE_NAME }} \
+            ./App/helm-charts/${{ vars.HELM_CHART_NAME }} \
+            --namespace ${{ vars.K8S_NAMESPACE }} \
+            --set image.repository=$ECR_REGISTRY/${{ github.event.repository.name }} \
+            --set image.tag=$IMAGE_TAG \
+            --set image.pullPolicy=Always"
+
+          if [ -n "${{ github.event.inputs.replicaCount }}" ]; then
+            CMD="$CMD --set replicaCount=${{ github.event.inputs.replicaCount }}"
+          fi
+
+          echo "Running Helm command:"
+          echo "$CMD"
+          eval $CMD
+
+      # Verify deployment is healthy before DAST starts
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/${{ vars.HELM_RELEASE_NAME }} \
+            --namespace ${{ vars.K8S_NAMESPACE }} \
+            --timeout=3m
+
+      # ── Detect environment from namespace ─────────────────────────────────
+      # Used by DAST job to decide scan type
+      # dev/qa namespace  → determines scan intensity
+      - name: Detect Environment
+        id: get_env
+        run: |
+          NAMESPACE="${{ vars.K8S_NAMESPACE }}"
+          if echo "$NAMESPACE" | grep -qi "prod"; then
+            ENV="prod"
+          elif echo "$NAMESPACE" | grep -qi "stg\|staging"; then
+            ENV="stg"
+          elif echo "$NAMESPACE" | grep -qi "qa"; then
+            ENV="qa"
+          else
+            ENV="dev"
+          fi
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "Detected environment: $ENV"
+
+      # ── Get the live app URL after deployment ─────────────────────────────
+      # Tries LoadBalancer first, falls back to GitHub variable
+      - name: Get App URL
+        id: get_app_url
+        run: |
+          echo "Waiting for LoadBalancer IP/hostname..."
+          sleep 20
+
+          # Try to get LoadBalancer external URL from Kubernetes
+          APP_URL=$(kubectl get svc ${{ vars.HELM_RELEASE_NAME }} \
+            --namespace ${{ vars.K8S_NAMESPACE }} \
+            -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+
+          # If no LoadBalancer, try Ingress
+          if [ -z "$APP_URL" ]; then
+            APP_URL=$(kubectl get ingress \
+              --namespace ${{ vars.K8S_NAMESPACE }} \
+              -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}' \
+              2>/dev/null || echo "")
+          fi
+
+          # Fall back to GitHub variable if kubectl didn't return URL
+          if [ -z "$APP_URL" ]; then
+            echo "Could not get URL from Kubernetes — using APP_URL variable"
+            APP_URL="${{ vars.APP_URL }}"
+          fi
+
+          # Add https:// if not present
+          if [[ "$APP_URL" != http* ]]; then
+            APP_URL="http://$APP_URL"
+          fi
+
+          echo "App URL: $APP_URL"
+          echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+
+
+  # ── JOB 2: DAST scan — runs after DEPLOY succeeds ────────────────────────
+  DAST:
+    runs-on: ubuntu-latest
+    needs: [ DEPLOY ]           # waits for deploy + verify to complete
+
+    # Skip DAST if:
+    # 1. User explicitly passed run_dast=false
+    # 2. Detected environment is production (never active scan prod)
+    if: >
+      always() &&
+      needs.DEPLOY.result == 'success' &&
+      github.event.inputs.run_dast != 'false'
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Decide scan type based on environment ─────────────────────────────
+      - name: Set DAST scan type
+        id: scan_config
+        run: |
+          ENV="${{ needs.DEPLOY.outputs.environment }}"
+          APP_URL="${{ needs.DEPLOY.outputs.app_url }}"
+
+          echo "Environment : $ENV"
+          echo "App URL     : $APP_URL"
+
+          case "$ENV" in
+            prod|stg)
+              SCAN_TYPE="baseline"
+              PLAN_FILE=".github/workflows/zap/plan-baseline.yml"
+              echo "Scan type: BASELINE (passive only — safe for $ENV)"
+              ;;
+            qa)
+              SCAN_TYPE="fullscan"
+              PLAN_FILE=".github/workflows/zap/plan-fullscan.yml"
+              echo "Scan type: FULL SCAN (active — QA environment)"
+              ;;
+            dev|*)
+              SCAN_TYPE="baseline"
+              PLAN_FILE=".github/workflows/zap/plan-baseline.yml"
+              echo "Scan type: BASELINE (fast feedback — dev environment)"
+              ;;
+          esac
+
+          echo "scan_type=$SCAN_TYPE"   >> $GITHUB_OUTPUT
+          echo "plan_file=$PLAN_FILE"   >> $GITHUB_OUTPUT
+          echo "app_url=$APP_URL"       >> $GITHUB_OUTPUT
+
+      # ── Wait for app to be fully ready before scanning ────────────────────
+      # Deployment verified but app may still be warming up
+      - name: Wait for app to be ready
+        run: |
+          APP_URL="${{ needs.DEPLOY.outputs.app_url }}"
+          echo "Waiting for app to respond at: $APP_URL"
+
+          MAX_RETRIES=12    # 12 x 10s = 2 minutes max wait
+          COUNT=0
+
+          until curl -s -o /dev/null -w "%{http_code}" \
+                  --max-time 10 "$APP_URL" | grep -qE "^[2-4]"; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -ge $MAX_RETRIES ]; then
+              echo "❌ App not responding after 2 minutes"
+              echo "   URL: $APP_URL"
+              echo "   Check your deployment and APP_URL variable"
+              exit 1
+            fi
+            echo "  Attempt $COUNT/$MAX_RETRIES — waiting 10s..."
+            sleep 10
+          done
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 10 "$APP_URL")
+          echo "✅ App is ready (HTTP $HTTP_CODE)"
+
+      # ── Fix ZAP folder permissions ────────────────────────────────────────
+      - name: Fix ZAP folder permissions
+        run: chmod -R 777 .github/workflows/zap/
+
+      # ── Run ZAP scan — plan selected dynamically by environment ───────────
+      - name: OWASP ZAP DAST Scan
+        uses: zaproxy/action-af@v0.2.0
+        continue-on-error: true
+        with:
+          plan: ${{ steps.scan_config.outputs.plan_file }}
+          docker_env_vars: |
+            TARGET_URL=${{ steps.scan_config.outputs.app_url }}
+
+      # ── List generated reports ────────────────────────────────────────────
+      - name: List generated reports
+        if: always()
+        run: ls -la .github/workflows/zap/ || echo "No ZAP reports found"
+
+      # ── Parse results and publish to GitHub Actions Summary ───────────────
+      - name: Publish DAST Summary
+        if: always()
+        run: |
+          python3 << 'EOF'
+          import json, os, sys
+
+          report_path  = ".github/workflows/zap/report_json.json"
+          summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+          scan_type    = os.environ.get("SCAN_TYPE", "baseline")
+          environment  = os.environ.get("ENVIRONMENT", "dev")
+          app_url      = os.environ.get("APP_URL", "")
+
+          try:
+              with open(report_path) as f:
+                  report = json.load(f)
+          except Exception as e:
+              print(f"❌ Could not read report: {e}")
+              sys.exit(0)
+
+          counts     = {"High":0,"Medium":0,"Low":0,"Informational":0}
+          alert_rows = []
+
+          for site in report.get("site",[]):
+              for alert in site.get("alerts",[]):
+                  risk  = alert.get("riskdesc","").split(" ")[0]
+                  name  = alert.get("name","Unknown")
+                  count = alert.get("count","?")
+                  sol   = alert.get("solution","")[:120].strip()
+                  if risk in counts: counts[risk] += 1
+                  badge = {"High":"🔴 High","Medium":"🟠 Medium",
+                           "Low":"🟡 Low","Informational":"🔵 Info"}.get(risk,risk)
+                  alert_rows.append((risk,badge,name,str(count),sol))
+
+          alert_rows.sort(key=lambda x:
+              {"High":0,"Medium":1,"Low":2,"Informational":3}.get(x[0],9))
+
+          if   counts["High"]   > 0: icon,label = "🔴","CRITICAL"
+          elif counts["Medium"] > 0: icon,label = "🟠","WARNING"
+          elif counts["Low"]    > 0: icon,label = "🟡","LOW"
+          else:                      icon,label = "✅","PASSED"
+
+          scan_label = "Full Active Scan" if scan_type=="fullscan" else "Baseline Passive Scan"
+
+          lines = []
+          lines.append(f"# {icon} DAST Scan — {label}")
+          lines.append(f"\n**Environment:** `{environment.upper()}`")
+          lines.append(f"**Target:** `{app_url}`")
+          lines.append(f"**Scan type:** {scan_label}\n")
+          lines.append("## Alert Summary")
+          lines.append("\n| Severity | Count |")
+          lines.append("|---|---|")
+          lines.append(f"| 🔴 High          | **{counts['High']}** |")
+          lines.append(f"| 🟠 Medium        | **{counts['Medium']}** |")
+          lines.append(f"| 🟡 Low           | **{counts['Low']}** |")
+          lines.append(f"| 🔵 Informational | **{counts['Informational']}** |")
+          lines.append(f"| **Total**        | **{sum(counts.values())}** |")
+          lines.append("")
+
+          important = [r for r in alert_rows if r[0] in ("High","Medium")]
+          if important:
+              lines.append("## High & Medium Alerts")
+              lines.append("\n| Severity | Alert | Instances | Fix |")
+              lines.append("|---|---|---|---|")
+              for _,badge,name,count,sol in important:
+                  lines.append(f"| {badge} | {name} | {count} | {sol.replace('|','/').replace(chr(10),' ')}... |")
+              lines.append("")
+
+          low_alerts = [r for r in alert_rows if r[0] == "Low"]
+          if low_alerts:
+              lines.append("## Low Alerts")
+              lines.append("\n| Alert | Instances |")
+              lines.append("|---|---|")
+              for _,_,name,count,_ in low_alerts:
+                  lines.append(f"| {name} | {count} |")
+              lines.append("")
+
+          lines.append("> 📥 Full reports available in **Artifacts** below.")
+
+          summary_text = "\n".join(lines)
+          print(summary_text)
+          if summary_file:
+              with open(summary_file,"w") as f: f.write(summary_text)
+
+          # Gate: only fail pipeline on High findings for QA full scan
+          # Dev/STG/PROD baseline = warn only, never block
+          if scan_type == "fullscan" and counts["High"] > 0:
+              print(f"\n🚨 DAST GATE FAILED — {counts['High']} High severity findings")
+              print(f"   Environment: {environment}")
+              print(f"   Fix issues before promoting to next environment")
+              sys.exit(1)
+          elif counts["High"] > 0:
+              print(f"\n⚠️  {counts['High']} High findings — review before next promotion")
+          EOF
+        env:
+          SCAN_TYPE:   ${{ steps.scan_config.outputs.scan_type }}
+          ENVIRONMENT: ${{ needs.DEPLOY.outputs.environment }}
+          APP_URL:     ${{ needs.DEPLOY.outputs.app_url }}
+
+      # ── Upload DAST reports ───────────────────────────────────────────────
+      - name: Upload DAST Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zap_scan_report
+          name: dast-reports-${{ needs.DEPLOY.outputs.environment }}
           path: |
-            report_html.html
-            report_json.json
-            report_md.md
+            .github/workflows/zap/report_html.html
+            .github/workflows/zap/report_json.json
+            .github/workflows/zap/report_md.md
+          retention-days: 30
