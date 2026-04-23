@@ -1,0 +1,41 @@
+env:
+  contexts:
+    - name: "baseline-context"
+      urls:
+        - "${TARGET_URL}"
+      includePaths:
+        - "${TARGET_URL}/.*"
+
+  parameters:
+    failOnError:      false
+    failOnWarning:    false
+    progressToStdout: true
+
+jobs:
+  - type: spider
+    parameters:
+      context:     "baseline-context"
+      maxDuration: 2
+
+  - type: passiveScan
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope:  true
+
+  - type: report
+    parameters:
+      template:   "traditional-html"
+      reportDir:  "."
+      reportFile: "report_html.html"
+
+  - type: report
+    parameters:
+      template:   "traditional-json"
+      reportDir:  "."
+      reportFile: "report_json.json"
+
+  - type: report
+    parameters:
+      template:   "traditional-md"
+      reportDir:  "."
+      reportFile: "report_md.md"
