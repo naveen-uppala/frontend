@@ -17,10 +17,10 @@ on:
         options:
           - "true"
           - "false"
-  # workflow_run:
-  #   workflows: ["Frontend CI Workflow"]
-  #   types:
-  #     - completed
+  workflow_run:
+    workflows: ["Frontend CI Workflow"]
+    types:
+      - completed
 
 permissions:
   id-token: write
