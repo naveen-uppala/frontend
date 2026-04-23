@@ -1,0 +1,50 @@
+env:
+  contexts:
+    - name: "fullscan-context"
+      urls:
+        - "${TARGET_URL}"
+      includePaths:
+        - "${TARGET_URL}/.*"
+      excludePaths:
+        - "${TARGET_URL}.*logout.*"
+        - "${TARGET_URL}.*signout.*"
+        - "${TARGET_URL}.*delete.*"
+
+  parameters:
+    failOnError:      true
+    failOnWarning:    false
+    progressToStdout: true
+
+jobs:
+  - type: spider
+    parameters:
+      context:     "fullscan-context"
+      maxDuration: 3
+
+  - type: passiveScan
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope:  true
+
+  - type: activeScan
+    parameters:
+      context:               "fullscan-context"
+      maxScanDurationInMins: 5
+
+  - type: report
+    parameters:
+      template:   "traditional-html"
+      reportDir:  "."
+      reportFile: "report_html.html"
+
+  - type: report
+    parameters:
+      template:   "traditional-json"
+      reportDir:  "."
+      reportFile: "report_json.json"
+
+  - type: report
+    parameters:
+      template:   "traditional-md"
+      reportDir:  "."
+      reportFile: "report_md.md"
