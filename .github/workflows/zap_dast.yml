@@ -222,7 +222,7 @@ jobs:
               ;;
             dev|*)
               SCAN_TYPE="baseline"
-              PLAN_FILE=".github/workflows/zap/plan-baseline.yml"
+              PLAN_FILE=".github/workflows/zap/plan-fullscan.yml"
               echo "Scan type: BASELINE (fast feedback — dev environment)"
               ;;
           esac
