@@ -21,9 +21,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: "3.14.4"
+    - name: Install Python
+      run: |
+        sudo dnf install -y python3.12 python3.12-pip
+        python3.12 --version
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
