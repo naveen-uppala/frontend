@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       ECR_REPOSITORY: ${{ github.event.repository.name }}
       IMAGE_TAG: ${{ github.run_number }}
