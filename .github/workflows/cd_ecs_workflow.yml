@@ -1,0 +1,93 @@
+name: Frontend CD ECS Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "ECR Image TAG"
+        required: true
+  workflow_run:
+    workflows: ["Frontend CI Workflow"]
+    types:
+      - completed
+
+permissions:
+  id-token: write        
+
+jobs:
+  deploy:
+    environment: dev 
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Python
+      run: |
+        sudo dnf install -y python3.12 python3.12-pip
+        python3.12 --version
+
+    - name: Install CDK requirements
+      run: python3 -m pip install -r cdk/requirements.txt        
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ vars.AWS_REGION }}
+        role-to-assume: ${{ vars.AWS_ASSUME_ROLE }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Resolve image tag
+      id: resolve_image_tag
+      run: |
+        RUN_NUMBER=$(curl -s \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/Frontend_CI.yml/runs?status=success&per_page=1" \
+          | jq -r '.workflow_runs[0].run_number')
+    
+        if [ "$RUN_NUMBER" = "null" ] || [ -z "$RUN_NUMBER" ]; then
+          echo "No successful build found"
+          exit 1
+        fi
+    
+        if [ -n "${{ inputs.image_tag }}" ]; then
+          TAG="${{ inputs.image_tag }}"
+          echo "Using input tag: $TAG"
+        else
+          TAG="$RUN_NUMBER"
+          echo "Using last successful build tag: $TAG"
+        fi
+        echo "image_tag=$TAG" >> $GITHUB_OUTPUT      
+
+    - name: Install dependencies
+      run: |
+        pip install -r cdk/requirements.txt
+        sudo npm install -g aws-cdk
+        
+    - name: CDK Bootstrap
+      run: |
+        cd cdk
+        cdk bootstrap aws://623900187958/$AWS_REGION 
+      
+    - name: CDK Deploy
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ github.event.repository.name }}
+        IMAGE_TAG: ${{ steps.resolve_image_tag.outputs.image_tag }}
+      run: |
+        cd cdk
+        cdk deploy \
+          --require-approval never \
+          --parameters ServiceName=frontend-service \
+          --parameters ImageUri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+          --parameters ContainerPort=5000 \
+          --parameters DesiredCount=2 \
+          --parameters VpcId=vpc-099c2902a26156019 \
+          --parameters SubnetIds=subnet-06cd48a60e43d6e8a,subnet-0edffbc23079c144d,subnet-0d83b156c934aea26 \
+          --parameters AlbSecurityGroupId=sg-0f0bb1373ab0451c6 \
+          --parameters ClusterName=cloud-nation-ecs \
+          --parameters AlbArn=arn:aws:elasticloadbalancing:us-east-2:623900187958:loadbalancer/app/frontend-alb/ccebd872733258e3 \
+          --parameters ListenerArn=arn:aws:elasticloadbalancing:us-east-2:623900187958:listener/app/frontend-alb/ccebd872733258e3/257af6bed21fd953
