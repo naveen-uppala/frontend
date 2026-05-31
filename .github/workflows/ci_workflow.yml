@@ -49,3 +49,9 @@ jobs:
       - name: Push Docker image to ECR
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+      - name: Docker Cleanup
+        if: always()
+        run: |
+          # Remove dangling images and (untagged layers from builds)
+          docker image prune -f          
