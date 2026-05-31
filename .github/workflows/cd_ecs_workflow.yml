@@ -64,13 +64,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo pip install -r cdk/requirements.txt
+        pip install -r cdk/requirements.txt
         sudo npm install -g aws-cdk
         
     - name: CDK Bootstrap
       run: |
         cd cdk
-        sudo cdk bootstrap aws://623900187958/$AWS_REGION 
+        cdk bootstrap aws://623900187958/$AWS_REGION 
       
     - name: CDK Deploy
       env:
@@ -79,7 +79,7 @@ jobs:
         IMAGE_TAG: ${{ steps.resolve_image_tag.outputs.image_tag }}
       run: |
         cd cdk
-        sudo cdk deploy \
+        cdk deploy \
           --require-approval never \
           --parameters ServiceName=frontend-service \
           --parameters ImageUri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
