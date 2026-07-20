@@ -37,7 +37,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
 
       - name: Run Snyk container scan
-        continue-on-error: true
+        continue-on-error: false
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: snyk_uat.1fcad39e.eyJlIjoxNzkyMjYyNDI5LCJoIjoic255ay5pbyIsImoiOiJBWjk3cmlzU29BbGFkcWVUNV9QQkRRIiwicyI6IjFmcVdQRFBqUjJLWllON0FhQ2RCdVEiLCJ0aWQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIn0.bj8O07NemS9KAUuK44w666EWL2n2Pe85VatoqOVJPZ5kl0ZJxphdAKhuSkd1IRMuPm84Jm_PDX0iyglYOSFHCA
