@@ -17,6 +17,9 @@
     "reactstrap": "^8.5.1",
     "web-vitals": "^1.1.2"
   },
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
