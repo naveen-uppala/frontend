@@ -36,13 +36,22 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
 
-      - name: Run Snyk container scan
+      - name: Snyk container monitor (push to dashboard)
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          args: --file=Dockerfile
+      
+      - name: Snyk container test (fail build on High+)
         continue-on-error: false
         uses: snyk/actions/docker@master
         env:
-          SNYK_TOKEN: snyk_uat.1fcad39e.eyJlIjoxNzkyMjYyNDI5LCJoIjoic255ay5pbyIsImoiOiJBWjk3cmlzU29BbGFkcWVUNV9QQkRRIiwicyI6IjFmcVdQRFBqUjJLWllON0FhQ2RCdVEiLCJ0aWQiOiJBQUFBQUFBQUFBQUFBQUFBQUFBQUFBIn0.bj8O07NemS9KAUuK44w666EWL2n2Pe85VatoqOVJPZ5kl0ZJxphdAKhuSkd1IRMuPm84Jm_PDX0iyglYOSFHCA
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          command: monitor
+          command: test
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           args: --file=Dockerfile --severity-threshold=high
 
