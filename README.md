@@ -1,4 +1,4 @@
-# Frontend React Project 1🚀
+# Frontend React Project 🚀
 
 [![CD](https://github.com/naveen-uppala/frontend/actions/workflows/Frontend_CD.yml/badge.svg)](
 https://github.com/naveen-uppala/frontend/blob/main/.github/workflows/Frontend_CD.yml
