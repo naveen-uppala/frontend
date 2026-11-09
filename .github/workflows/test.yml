@@ -1,0 +1,13 @@
+name: ARC POC
+on:
+  workflow_dispatch:      # manual trigger
+
+
+jobs:
+  test:
+    runs-on: eks-arc-runners
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Running in pod: $HOSTNAME"
+          uname -a
